@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import AddItemForm from "@/components/AddItemForm";
@@ -19,12 +19,11 @@ export default function Home() {
     clearAll,
   } = useShoppingList();
   const [showConfirm, setShowConfirm] = useState(false);
-  const listTopRef = useRef<HTMLDivElement>(null);
 
   const handleAddItem = (item: Omit<ShoppingItem, "id" | "checked" | "createdAt">) => {
     addItem(item);
     setTimeout(() => {
-      listTopRef.current?.scrollIntoView({ behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }, 100);
   };
 
@@ -42,7 +41,7 @@ export default function Home() {
   return (
     <main className="max-w-lg mx-auto pb-24">
       {/* ヘッダー */}
-      <header className="sticky top-0 bg-[#181824] border-b border-[#2a2a3a] text-white px-5 py-4 z-40">
+      <header className="bg-[#181824] border-b border-[#2a2a3a] text-white px-5 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-100">お買い物リスト</h1>
@@ -70,7 +69,7 @@ export default function Home() {
       </header>
 
       {/* リスト */}
-      <div ref={listTopRef} />
+      <div />
       <div className="px-4 pt-4">
         {items.length === 0 ? (
           <div className="text-center py-20 text-gray-600">
