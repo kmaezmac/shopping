@@ -4,6 +4,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "お買い物リスト",
   description: "イオンお買い物リスト",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import AddItemForm from "@/components/AddItemForm";
 import ShoppingListItem from "@/components/ShoppingListItem";
+import { ShoppingItem } from "@/types";
 
 export default function Home() {
   const {
@@ -18,6 +19,14 @@ export default function Home() {
     clearAll,
   } = useShoppingList();
   const [showConfirm, setShowConfirm] = useState(false);
+  const listTopRef = useRef<HTMLDivElement>(null);
+
+  const handleAddItem = (item: Omit<ShoppingItem, "id" | "checked" | "createdAt">) => {
+    addItem(item);
+    setTimeout(() => {
+      listTopRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
 
   const uncheckedItems = items.filter((i) => !i.checked);
   const checkedItems = items.filter((i) => i.checked);
@@ -61,6 +70,7 @@ export default function Home() {
       </header>
 
       {/* リスト */}
+      <div ref={listTopRef} />
       <div className="px-4 pt-4">
         {items.length === 0 ? (
           <div className="text-center py-20 text-gray-600">
@@ -146,7 +156,7 @@ export default function Home() {
       )}
 
       {/* 追加フォーム */}
-      <AddItemForm onAdd={addItem} />
+      <AddItemForm onAdd={handleAddItem} />
     </main>
   );
 }
