@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  background-color: #0f0f14;
+  color: #e4e4e7;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* スワイプ用 */
+.swipe-item {
+  transition: transform 0.2s ease-out;
+  touch-action: pan-y;
+}
+
+.swipe-item.swiping {
+  transition: none;
+}
+
+/* チェック済みアイテム */
+.checked-item {
+  opacity: 0.5;
+}
+
+.checked-item .item-name {
+  text-decoration: line-through;
+}
+
+/* 画像プレビュー */
+input[type="file"] {
+  display: none;
+}
