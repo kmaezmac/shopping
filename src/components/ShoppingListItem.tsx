@@ -7,6 +7,7 @@ interface Props {
   item: ShoppingItem;
   onToggleCheck: (id: string) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
+  onUpdateName: (id: string, newName: string) => void;
   onRemove: (id: string) => void;
 }
 
@@ -14,6 +15,7 @@ export default function ShoppingListItem({
   item,
   onToggleCheck,
   onUpdateQuantity,
+  onUpdateName,
   onRemove,
 }: Props) {
   const touchStartX = useRef(0);
@@ -21,6 +23,8 @@ export default function ShoppingListItem({
   const [offsetX, setOffsetX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [showImage, setShowImage] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(item.name);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -45,6 +49,15 @@ export default function ShoppingListItem({
     }
   };
 
+  const handleEditSubmit = () => {
+    if (editName.trim()) {
+      onUpdateName(item.id, editName.trim());
+    } else {
+      setEditName(item.name);
+    }
+    setIsEditing(false);
+  };
+
   return (
     <>
       <div className="relative overflow-hidden rounded-2xl mb-3">
@@ -55,7 +68,7 @@ export default function ShoppingListItem({
 
         {/* メインカード */}
         <div
-          className={`swipe-item relative rounded-2xl p-4 flex items-center gap-3 border ${
+          className={`swipe-item relative rounded-2xl p-4 flex items-start gap-3 border ${
             swiping ? "swiping" : ""
           } ${
             item.checked
@@ -70,7 +83,7 @@ export default function ShoppingListItem({
           {/* チェックボックス */}
           <button
             onClick={() => onToggleCheck(item.id)}
-            className={`w-7 h-7 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+            className={`w-7 h-7 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all mt-0.5 ${
               item.checked
                 ? "bg-green-500 border-green-500 shadow-sm"
                 : "border-[#4a4a5a] hover:border-purple-400"
@@ -99,9 +112,15 @@ export default function ShoppingListItem({
 
           {/* 商品情報 */}
           <div className="flex-1 min-w-0">
-            <p className="item-name font-semibold text-gray-100 truncate text-[15px]">
+            <button
+              onClick={() => {
+                setEditName(item.name);
+                setIsEditing(true);
+              }}
+              className="item-name font-semibold text-gray-100 text-[15px] text-left break-words w-full"
+            >
               {item.name}
-            </p>
+            </button>
             <p className="text-xs text-gray-500 mt-0.5">{item.unit}</p>
           </div>
 
@@ -145,6 +164,39 @@ export default function ShoppingListItem({
             alt={item.name}
             className="max-w-full max-h-full rounded-xl"
           />
+        </div>
+      )}
+
+      {/* 編集モーダル */}
+      {isEditing && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">
+          <div className="bg-[#1c1c28] border border-[#2a2a3a] rounded-2xl p-5 w-full max-w-sm shadow-xl">
+            <p className="text-gray-100 font-bold text-base mb-3">商品名を編集</p>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 rounded-lg px-4 py-3 mb-4 text-base focus:outline-none focus:border-purple-500"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setEditName(item.name);
+                  setIsEditing(false);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-[#3a3a4a] text-gray-400 font-semibold text-sm active:bg-[#2a2a3a]"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleEditSubmit}
+                className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white font-semibold text-sm active:bg-purple-700"
+              >
+                保存
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

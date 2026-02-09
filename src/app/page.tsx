@@ -15,6 +15,7 @@ export default function Home() {
     removeItem,
     toggleCheck,
     updateQuantity,
+    updateName,
     clearChecked,
     clearAll,
   } = useShoppingList();
@@ -86,6 +87,7 @@ export default function Home() {
                 item={item}
                 onToggleCheck={toggleCheck}
                 onUpdateQuantity={updateQuantity}
+                onUpdateName={updateName}
                 onRemove={removeItem}
               />
             ))}
@@ -106,6 +108,7 @@ export default function Home() {
                     item={item}
                     onToggleCheck={toggleCheck}
                     onUpdateQuantity={updateQuantity}
+                    onUpdateName={updateName}
                     onRemove={removeItem}
                   />
                 ))}

@@ -138,6 +138,19 @@ export function useShoppingList() {
     }
   }, [items]);
 
+  const updateName = useCallback(async (id: string, newName: string) => {
+    if (!newName.trim()) return;
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, name: newName.trim() } : item
+      )
+    );
+    await supabase
+      .from("shopping_items")
+      .update({ name: newName.trim() })
+      .eq("id", id);
+  }, []);
+
   const clearAll = useCallback(async () => {
     if (items.length === 0) return;
 
@@ -172,6 +185,7 @@ export function useShoppingList() {
     removeItem,
     toggleCheck,
     updateQuantity,
+    updateName,
     clearChecked,
     clearAll,
   };
