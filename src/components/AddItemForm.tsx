@@ -14,6 +14,7 @@ export default function AddItemForm({ onAdd }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [itemUrl, setItemUrl] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,20 +31,11 @@ export default function AddItemForm({ onAdd }: Props) {
   const uploadImage = async (file: File): Promise<string | null> => {
     const ext = file.name.split(".").pop();
     const fileName = `${crypto.randomUUID()}.${ext}`;
-
     const { error } = await supabase.storage
       .from("shopping-images")
       .upload(fileName, file);
-
-    if (error) {
-      console.error("画像アップロード失敗:", error);
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from("shopping-images")
-      .getPublicUrl(fileName);
-
+    if (error) return null;
+    const { data } = supabase.storage.from("shopping-images").getPublicUrl(fileName);
     return data.publicUrl;
   };
 
@@ -61,6 +53,7 @@ export default function AddItemForm({ onAdd }: Props) {
       unit: unit.trim() || "個",
       quantity,
       imageUrl,
+      url: itemUrl.trim() || null,
     });
 
     setName("");
@@ -68,6 +61,7 @@ export default function AddItemForm({ onAdd }: Props) {
     setQuantity(1);
     setPreviewUrl(null);
     setImageFile(null);
+    setItemUrl("");
     setUploading(false);
     setIsOpen(false);
   };
@@ -88,12 +82,7 @@ export default function AddItemForm({ onAdd }: Props) {
       <div className="bg-[#1c1c28] w-full rounded-t-2xl p-5 pb-8 animate-slide-up">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-100">商品を追加</h2>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-gray-500 text-2xl leading-none"
-          >
-            ×
-          </button>
+          <button onClick={() => setIsOpen(false)} className="text-gray-500 text-2xl leading-none">×</button>
         </div>
 
         {/* 商品名 */}
@@ -116,67 +105,39 @@ export default function AddItemForm({ onAdd }: Props) {
             className="flex-1 bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 placeholder-gray-500 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-purple-500"
           />
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]"
-            >
-              −
-            </button>
-            <span className="w-8 text-center text-lg font-semibold text-gray-100">
-              {quantity}
-            </span>
-            <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]"
-            >
-              +
-            </button>
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]">−</button>
+            <span className="w-8 text-center text-lg font-semibold text-gray-100">{quantity}</span>
+            <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]">+</button>
           </div>
         </div>
 
+        {/* URL */}
+        <input
+          type="url"
+          placeholder="URL（任意）"
+          value={itemUrl}
+          onChange={(e) => setItemUrl(e.target.value)}
+          className="w-full bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 placeholder-gray-500 rounded-lg px-4 py-3 mb-3 text-base focus:outline-none focus:border-purple-500"
+        />
+
         {/* 画像 */}
         <div className="mb-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} />
           {previewUrl ? (
             <div className="relative inline-block">
-              <img
-                src={previewUrl}
-                alt="プレビュー"
-                className="w-20 h-20 object-cover rounded-lg"
-              />
+              <img src={previewUrl} alt="プレビュー" className="w-20 h-20 object-cover rounded-lg" />
               <button
-                onClick={() => {
-                  setPreviewUrl(null);
-                  setImageFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
+                onClick={() => { setPreviewUrl(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
-              >
-                ×
-              </button>
+              >×</button>
             </div>
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2 text-gray-500 border border-dashed border-[#3a3a4a] rounded-lg px-4 py-3 w-full"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               画像を追加
             </button>

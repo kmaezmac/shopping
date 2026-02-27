@@ -16,6 +16,7 @@ export default function Home() {
     toggleCheck,
     updateQuantity,
     updateName,
+    updateItemMedia,
     clearChecked,
     clearAll,
   } = useShoppingList();
@@ -88,6 +89,7 @@ export default function Home() {
                 onToggleCheck={toggleCheck}
                 onUpdateQuantity={updateQuantity}
                 onUpdateName={updateName}
+                onUpdateItemMedia={updateItemMedia}
                 onRemove={removeItem}
               />
             ))}
@@ -109,6 +111,7 @@ export default function Home() {
                     onToggleCheck={toggleCheck}
                     onUpdateQuantity={updateQuantity}
                     onUpdateName={updateName}
+                    onUpdateItemMedia={updateItemMedia}
                     onRemove={removeItem}
                   />
                 ))}

@@ -4,6 +4,7 @@ export interface ShoppingItem {
   unit: string;
   quantity: number;
   imageUrl: string | null;
+  url: string | null;
   checked: boolean;
   createdAt: number;
 }

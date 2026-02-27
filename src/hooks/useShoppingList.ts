@@ -22,6 +22,7 @@ export function useShoppingList() {
           unit: row.unit,
           quantity: row.quantity,
           imageUrl: row.image_url,
+          url: row.url ?? null,
           checked: row.checked,
           createdAt: new Date(row.created_at).getTime(),
         }))
@@ -38,15 +39,11 @@ export function useShoppingList() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "shopping_items" },
-        () => {
-          fetchItems();
-        }
+        () => { fetchItems(); }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchItems]);
 
   const addItem = useCallback(
@@ -58,6 +55,7 @@ export function useShoppingList() {
           unit: item.unit,
           quantity: item.quantity,
           image_url: item.imageUrl,
+          url: item.url,
         })
         .select()
         .single();
@@ -71,6 +69,7 @@ export function useShoppingList() {
             unit: data.unit,
             quantity: data.quantity,
             imageUrl: data.image_url,
+            url: data.url ?? null,
             checked: data.checked,
             createdAt: new Date(data.created_at).getTime(),
           },
@@ -109,7 +108,6 @@ export function useShoppingList() {
       const currentItem = items.find((i) => i.id === id);
       if (!currentItem) return;
 
-      // 数量1で−したら削除
       if (currentItem.quantity + delta <= 0) {
         await removeItem(id);
         return;
@@ -117,9 +115,7 @@ export function useShoppingList() {
 
       setItems((prev) =>
         prev.map((item) =>
-          item.id === id
-            ? { ...item, quantity: item.quantity + delta }
-            : item
+          item.id === id ? { ...item, quantity: item.quantity + delta } : item
         )
       );
       await supabase
@@ -129,14 +125,6 @@ export function useShoppingList() {
     },
     [items, removeItem]
   );
-
-  const clearChecked = useCallback(async () => {
-    const checkedIds = items.filter((i) => i.checked).map((i) => i.id);
-    setItems((prev) => prev.filter((item) => !item.checked));
-    if (checkedIds.length > 0) {
-      await supabase.from("shopping_items").delete().in("id", checkedIds);
-    }
-  }, [items]);
 
   const updateName = useCallback(async (id: string, newName: string) => {
     if (!newName.trim()) return;
@@ -151,10 +139,33 @@ export function useShoppingList() {
       .eq("id", id);
   }, []);
 
+  // 画像・URL同時更新
+  const updateItemMedia = useCallback(
+    async (id: string, imageUrl: string | null, url: string | null) => {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, imageUrl, url } : item
+        )
+      );
+      await supabase
+        .from("shopping_items")
+        .update({ image_url: imageUrl, url })
+        .eq("id", id);
+    },
+    []
+  );
+
+  const clearChecked = useCallback(async () => {
+    const checkedIds = items.filter((i) => i.checked).map((i) => i.id);
+    setItems((prev) => prev.filter((item) => !item.checked));
+    if (checkedIds.length > 0) {
+      await supabase.from("shopping_items").delete().in("id", checkedIds);
+    }
+  }, [items]);
+
   const clearAll = useCallback(async () => {
     if (items.length === 0) return;
 
-    // 履歴に保存
     const { data: history } = await supabase
       .from("shopping_history")
       .insert({})
@@ -169,6 +180,7 @@ export function useShoppingList() {
           unit: item.unit,
           quantity: item.quantity,
           image_url: item.imageUrl,
+          url: item.url,
         }))
       );
     }
@@ -186,6 +198,7 @@ export function useShoppingList() {
     toggleCheck,
     updateQuantity,
     updateName,
+    updateItemMedia,
     clearChecked,
     clearAll,
   };
