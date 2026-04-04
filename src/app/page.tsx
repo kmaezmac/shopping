@@ -16,6 +16,7 @@ export default function Home() {
     toggleCheck,
     updateQuantity,
     updateName,
+    updateUnit,
     updateItemMedia,
     updateStoreCategory,
     reorderItems,
@@ -169,6 +170,7 @@ export default function Home() {
                     onToggleCheck={toggleCheck}
                     onUpdateQuantity={updateQuantity}
                     onUpdateName={updateName}
+                    onUpdateUnit={updateUnit}
                     onUpdateItemMedia={updateItemMedia}
                     onUpdateStoreCategory={updateStoreCategory}
                     onRemove={removeItem}
@@ -196,6 +198,7 @@ export default function Home() {
                     onToggleCheck={toggleCheck}
                     onUpdateQuantity={updateQuantity}
                     onUpdateName={updateName}
+                    onUpdateUnit={updateUnit}
                     onUpdateItemMedia={updateItemMedia}
                     onUpdateStoreCategory={updateStoreCategory}
                     onRemove={removeItem}

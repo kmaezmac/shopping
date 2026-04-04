@@ -153,6 +153,14 @@ export function useShoppingList() {
       .eq("id", id);
   }, []);
 
+  const updateUnit = useCallback(async (id: string, newUnit: string) => {
+    const unit = newUnit.trim() || "個";
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, unit } : item))
+    );
+    await supabase.from("shopping_items").update({ unit }).eq("id", id);
+  }, []);
+
   const updateItemMedia = useCallback(
     async (id: string, imageUrl: string | null, url: string | null) => {
       setItems((prev) =>
@@ -245,6 +253,7 @@ export function useShoppingList() {
     toggleCheck,
     updateQuantity,
     updateName,
+    updateUnit,
     updateItemMedia,
     updateStoreCategory,
     reorderItems,

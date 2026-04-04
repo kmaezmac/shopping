@@ -9,6 +9,7 @@ interface Props {
   onToggleCheck: (id: string) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onUpdateName: (id: string, newName: string) => void;
+  onUpdateUnit: (id: string, newUnit: string) => void;
   onUpdateItemMedia: (id: string, imageUrl: string | null, url: string | null) => void;
   onUpdateStoreCategory: (id: string, store: string | null, category: string | null) => void;
   onRemove: (id: string) => void;
@@ -21,6 +22,7 @@ export default function ShoppingListItem({
   onToggleCheck,
   onUpdateQuantity,
   onUpdateName,
+  onUpdateUnit,
   onUpdateItemMedia,
   onUpdateStoreCategory,
   onRemove,
@@ -30,6 +32,7 @@ export default function ShoppingListItem({
   const [showImage, setShowImage] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
+  const [editUnit, setEditUnit] = useState(item.unit);
   const [editUrl, setEditUrl] = useState(item.url ?? "");
   const [editStore, setEditStore] = useState(item.store ?? "");
   const [editCategory, setEditCategory] = useState(item.category ?? "");
@@ -40,6 +43,7 @@ export default function ShoppingListItem({
 
   const openEdit = () => {
     setEditName(item.name);
+    setEditUnit(item.unit);
     setEditUrl(item.url ?? "");
     setEditStore(item.store ?? "");
     setEditCategory(item.category ?? "");
@@ -63,6 +67,9 @@ export default function ShoppingListItem({
 
     if (editName.trim() !== item.name) {
       await onUpdateName(item.id, editName.trim());
+    }
+    if (editUnit !== item.unit) {
+      onUpdateUnit(item.id, editUnit);
     }
 
     let newImageUrl = item.imageUrl;
@@ -242,15 +249,24 @@ export default function ShoppingListItem({
               <button onClick={() => setIsEditing(false)} className="text-gray-500 text-2xl leading-none">×</button>
             </div>
 
-            {/* 商品名 */}
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="w-full bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 rounded-lg px-4 py-3 mb-3 text-base focus:outline-none focus:border-purple-500"
-              autoFocus
-              placeholder="商品名"
-            />
+            {/* 商品名・単位 */}
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="flex-1 bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-purple-500"
+                autoFocus
+                placeholder="商品名"
+              />
+              <input
+                type="text"
+                value={editUnit}
+                onChange={(e) => setEditUnit(e.target.value)}
+                className="w-28 bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 placeholder-gray-500 rounded-lg px-3 py-3 text-base focus:outline-none focus:border-purple-500"
+                placeholder="単位"
+              />
+            </div>
 
             {/* 店舗名・カテゴリ */}
             <div className="flex gap-2 mb-3">
