@@ -193,34 +193,29 @@ export default function ShoppingListItem({
           )}
         </div>
 
-        {/* 右側コントロール */}
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
-          {/* 削除ボタン */}
+        {/* 右側コントロール（横並び） */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={() => onRemove(item.id)}
-            className="w-7 h-7 rounded-full bg-red-900/30 text-red-400 border border-red-800/60 flex items-center justify-center active:bg-red-900/60 transition-colors"
+            className="w-8 h-8 rounded-full bg-red-900/30 text-red-400 border border-red-800/60 flex items-center justify-center active:bg-red-900/60 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
-
-          {/* 数量コントロール */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => onUpdateQuantity(item.id, -1)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold transition-colors shadow-sm bg-[#2a2a3a] text-gray-300 border border-[#3a3a4a] active:bg-[#3a3a4a]"
-            >
-              −
-            </button>
-            <span className="w-7 text-center font-bold text-gray-100">{item.quantity}</span>
-            <button
-              onClick={() => onUpdateQuantity(item.id, 1)}
-              className="w-8 h-8 rounded-full bg-purple-900/40 text-purple-300 border border-purple-800 flex items-center justify-center text-lg font-bold active:bg-purple-900/60 transition-colors shadow-sm"
-            >
-              +
-            </button>
-          </div>
+          <button
+            onClick={() => onUpdateQuantity(item.id, -1)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold transition-colors shadow-sm bg-[#2a2a3a] text-gray-300 border border-[#3a3a4a] active:bg-[#3a3a4a]"
+          >
+            −
+          </button>
+          <span className="w-7 text-center font-bold text-gray-100">{item.quantity}</span>
+          <button
+            onClick={() => onUpdateQuantity(item.id, 1)}
+            className="w-8 h-8 rounded-full bg-purple-900/40 text-purple-300 border border-purple-800 flex items-center justify-center text-lg font-bold active:bg-purple-900/60 transition-colors shadow-sm"
+          >
+            +
+          </button>
         </div>
       </div>
 
