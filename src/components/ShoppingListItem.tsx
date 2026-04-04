@@ -104,7 +104,7 @@ export default function ShoppingListItem({
   return (
     <>
       <div
-        className={`rounded-2xl p-4 flex items-center gap-3 border mb-3 transition-all ${
+        className={`rounded-2xl px-3 py-2.5 flex items-center gap-2 border mb-2 transition-all ${
           isDragging
             ? "border-purple-500 shadow-[0_4px_20px_rgba(147,51,234,0.4)] scale-[1.02] opacity-80"
             : item.checked
@@ -119,15 +119,15 @@ export default function ShoppingListItem({
               e.stopPropagation();
               onDragStart(item.id, e);
             }}
-            className="touch-none flex-shrink-0 flex items-center justify-center w-6 h-10 cursor-grab active:cursor-grabbing text-gray-600 select-none"
+            className="touch-none flex-shrink-0 flex items-center justify-center w-5 self-stretch cursor-grab active:cursor-grabbing text-gray-600 select-none"
           >
-            <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
-              <circle cx="3" cy="3" r="2" />
-              <circle cx="9" cy="3" r="2" />
-              <circle cx="3" cy="10" r="2" />
-              <circle cx="9" cy="10" r="2" />
-              <circle cx="3" cy="17" r="2" />
-              <circle cx="9" cy="17" r="2" />
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="currentColor">
+              <circle cx="2.5" cy="2.5" r="1.8" />
+              <circle cx="7.5" cy="2.5" r="1.8" />
+              <circle cx="2.5" cy="9" r="1.8" />
+              <circle cx="7.5" cy="9" r="1.8" />
+              <circle cx="2.5" cy="15.5" r="1.8" />
+              <circle cx="7.5" cy="15.5" r="1.8" />
             </svg>
           </div>
         )}
@@ -135,84 +135,88 @@ export default function ShoppingListItem({
         {/* チェックボックス */}
         <button
           onClick={() => onToggleCheck(item.id)}
-          className={`w-7 h-7 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-            item.checked ? "bg-green-500 border-green-500 shadow-sm" : "border-[#4a4a5a]"
+          className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+            item.checked ? "bg-green-500 border-green-500" : "border-[#4a4a5a]"
           }`}
         >
           {item.checked && (
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           )}
         </button>
 
-        {/* 画像サムネイル */}
-        {item.imageUrl && (
-          <button
-            onClick={() => setShowImage(true)}
-            className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-[#2a2a3a]"
-          >
-            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
-          </button>
-        )}
-
-        {/* 商品情報 */}
+        {/* 商品情報（名前フル幅＋メタ行） */}
         <div className="flex-1 min-w-0">
+          {/* 商品名：常にフル幅 */}
           <button
             onClick={openEdit}
-            className="item-name font-semibold text-gray-100 text-[15px] text-left break-words w-full"
+            className="item-name font-semibold text-gray-100 text-[14px] text-left w-full leading-snug"
+            style={{ wordBreak: "break-word" }}
           >
             {item.name}
           </button>
-          <p className="text-xs text-gray-500 mt-0.5">{item.unit}</p>
-          {(item.store || item.category) && (
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              {item.store && (
-                <span className="text-xs bg-blue-900/40 text-blue-300 border border-blue-800/60 px-2 py-0.5 rounded-full">
-                  {item.store}
-                </span>
-              )}
-              {item.category && (
-                <span className="text-xs text-gray-500">{item.category}</span>
+
+          {/* メタ行：画像サムネイル＋単位・店舗・カテゴリ・URL */}
+          <div className="flex items-center gap-2 mt-1">
+            {item.imageUrl && (
+              <button
+                onClick={() => setShowImage(true)}
+                className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 border border-[#2a2a3a]"
+              >
+                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+              </button>
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-gray-500">{item.unit}</span>
+                {item.store && (
+                  <span className="text-xs bg-blue-900/40 text-blue-300 border border-blue-800/60 px-1.5 py-0.5 rounded-full leading-none">
+                    {item.store}
+                  </span>
+                )}
+                {item.category && (
+                  <span className="text-xs text-gray-600">{item.category}</span>
+                )}
+              </div>
+              {item.url && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-0.5 text-xs text-purple-400 mt-0.5 underline underline-offset-2"
+                >
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  リンク
+                </a>
               )}
             </div>
-          )}
-          {item.url && (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-xs text-purple-400 mt-1 underline underline-offset-2"
-            >
-              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              リンクを開く
-            </a>
-          )}
+          </div>
         </div>
 
         {/* 右側コントロール（横並び） */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => onRemove(item.id)}
-            className="w-8 h-8 rounded-full bg-red-900/30 text-red-400 border border-red-800/60 flex items-center justify-center active:bg-red-900/60 transition-colors"
+            className="w-7 h-7 rounded-full bg-red-900/30 text-red-400 border border-red-800/60 flex items-center justify-center active:bg-red-900/60 transition-colors"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
           <button
             onClick={() => onUpdateQuantity(item.id, -1)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold transition-colors shadow-sm bg-[#2a2a3a] text-gray-300 border border-[#3a3a4a] active:bg-[#3a3a4a]"
+            className="w-7 h-7 rounded-full flex items-center justify-center font-bold transition-colors bg-[#2a2a3a] text-gray-300 border border-[#3a3a4a] active:bg-[#3a3a4a] text-base"
           >
             −
           </button>
-          <span className="w-7 text-center font-bold text-gray-100">{item.quantity}</span>
+          <span className="w-6 text-center font-bold text-gray-100 text-sm">{item.quantity}</span>
           <button
             onClick={() => onUpdateQuantity(item.id, 1)}
-            className="w-8 h-8 rounded-full bg-purple-900/40 text-purple-300 border border-purple-800 flex items-center justify-center text-lg font-bold active:bg-purple-900/60 transition-colors shadow-sm"
+            className="w-7 h-7 rounded-full bg-purple-900/40 text-purple-300 border border-purple-800 flex items-center justify-center font-bold active:bg-purple-900/60 transition-colors text-base"
           >
             +
           </button>
