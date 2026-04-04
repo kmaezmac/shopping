@@ -12,6 +12,7 @@ export function useShoppingList() {
     const { data } = await supabase
       .from("shopping_items")
       .select("*")
+      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
 
     if (data) {
@@ -25,6 +26,9 @@ export function useShoppingList() {
           url: row.url ?? null,
           checked: row.checked,
           createdAt: new Date(row.created_at).getTime(),
+          store: row.store ?? null,
+          category: row.category ?? null,
+          sortOrder: row.sort_order ?? 0,
         }))
       );
     }
@@ -47,7 +51,11 @@ export function useShoppingList() {
   }, [fetchItems]);
 
   const addItem = useCallback(
-    async (item: Omit<ShoppingItem, "id" | "checked" | "createdAt">) => {
+    async (item: Omit<ShoppingItem, "id" | "checked" | "createdAt" | "sortOrder">) => {
+      const maxOrder = items
+        .filter((i) => !i.checked)
+        .reduce((max, i) => Math.max(max, i.sortOrder), -1);
+
       const { data } = await supabase
         .from("shopping_items")
         .insert({
@@ -56,6 +64,9 @@ export function useShoppingList() {
           quantity: item.quantity,
           image_url: item.imageUrl,
           url: item.url,
+          store: item.store,
+          category: item.category,
+          sort_order: maxOrder + 1,
         })
         .select()
         .single();
@@ -72,11 +83,14 @@ export function useShoppingList() {
             url: data.url ?? null,
             checked: data.checked,
             createdAt: new Date(data.created_at).getTime(),
+            store: data.store ?? null,
+            category: data.category ?? null,
+            sortOrder: data.sort_order ?? 0,
           },
         ]);
       }
     },
-    []
+    [items]
   );
 
   const removeItem = useCallback(async (id: string) => {
@@ -139,7 +153,6 @@ export function useShoppingList() {
       .eq("id", id);
   }, []);
 
-  // 画像・URL同時更新
   const updateItemMedia = useCallback(
     async (id: string, imageUrl: string | null, url: string | null) => {
       setItems((prev) =>
@@ -155,6 +168,36 @@ export function useShoppingList() {
     []
   );
 
+  const updateStoreCategory = useCallback(
+    async (id: string, store: string | null, category: string | null) => {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, store, category } : item
+        )
+      );
+      await supabase
+        .from("shopping_items")
+        .update({ store, category })
+        .eq("id", id);
+    },
+    []
+  );
+
+  const reorderItems = useCallback(async (orderedIds: string[]) => {
+    const orderMap = new Map(orderedIds.map((id, idx) => [id, idx]));
+    setItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        sortOrder: orderMap.has(item.id) ? orderMap.get(item.id)! : item.sortOrder,
+      }))
+    );
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        supabase.from("shopping_items").update({ sort_order: idx }).eq("id", id)
+      )
+    );
+  }, []);
+
   const clearChecked = useCallback(async () => {
     const checkedIds = items.filter((i) => i.checked).map((i) => i.id);
     setItems((prev) => prev.filter((item) => !item.checked));
@@ -163,8 +206,10 @@ export function useShoppingList() {
     }
   }, [items]);
 
+  // 買い物完了: チェック済みのみ履歴保存して削除、未チェックは残す
   const clearAll = useCallback(async () => {
-    if (items.length === 0) return;
+    const checkedItems = items.filter((i) => i.checked);
+    if (checkedItems.length === 0) return;
 
     const { data: history } = await supabase
       .from("shopping_history")
@@ -174,20 +219,22 @@ export function useShoppingList() {
 
     if (history) {
       await supabase.from("shopping_history_items").insert(
-        items.map((item) => ({
+        checkedItems.map((item) => ({
           history_id: history.id,
           name: item.name,
           unit: item.unit,
           quantity: item.quantity,
           image_url: item.imageUrl,
           url: item.url,
+          store: item.store,
+          category: item.category,
         }))
       );
     }
 
-    const allIds = items.map((i) => i.id);
-    setItems([]);
-    await supabase.from("shopping_items").delete().in("id", allIds);
+    const checkedIds = checkedItems.map((i) => i.id);
+    setItems((prev) => prev.filter((i) => !i.checked));
+    await supabase.from("shopping_items").delete().in("id", checkedIds);
   }, [items]);
 
   return {
@@ -199,6 +246,8 @@ export function useShoppingList() {
     updateQuantity,
     updateName,
     updateItemMedia,
+    updateStoreCategory,
+    reorderItems,
     clearChecked,
     clearAll,
   };

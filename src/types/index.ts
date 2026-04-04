@@ -7,4 +7,7 @@ export interface ShoppingItem {
   url: string | null;
   checked: boolean;
   createdAt: number;
+  store: string | null;
+  category: string | null;
+  sortOrder: number;
 }

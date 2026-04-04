@@ -5,13 +5,15 @@ import { ShoppingItem } from "@/types";
 import { supabase } from "@/lib/supabase";
 
 interface Props {
-  onAdd: (item: Omit<ShoppingItem, "id" | "checked" | "createdAt">) => void;
+  onAdd: (item: Omit<ShoppingItem, "id" | "checked" | "createdAt" | "sortOrder">) => void;
 }
 
 export default function AddItemForm({ onAdd }: Props) {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [store, setStore] = useState("");
+  const [category, setCategory] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [itemUrl, setItemUrl] = useState("");
@@ -54,11 +56,15 @@ export default function AddItemForm({ onAdd }: Props) {
       quantity,
       imageUrl,
       url: itemUrl.trim() || null,
+      store: store.trim() || null,
+      category: category.trim() || null,
     });
 
     setName("");
     setUnit("");
     setQuantity(1);
+    setStore("");
+    setCategory("");
     setPreviewUrl(null);
     setImageFile(null);
     setItemUrl("");
@@ -79,7 +85,7 @@ export default function AddItemForm({ onAdd }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end">
-      <div className="bg-[#1c1c28] w-full rounded-t-2xl p-5 pb-8 animate-slide-up">
+      <div className="bg-[#1c1c28] w-full rounded-t-2xl p-5 pb-8 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-100">商品を追加</h2>
           <button onClick={() => setIsOpen(false)} className="text-gray-500 text-2xl leading-none">×</button>
@@ -105,10 +111,38 @@ export default function AddItemForm({ onAdd }: Props) {
             className="flex-1 bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 placeholder-gray-500 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-purple-500"
           />
           <div className="flex items-center gap-2">
-            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]">−</button>
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]"
+            >
+              −
+            </button>
             <span className="w-8 text-center text-lg font-semibold text-gray-100">{quantity}</span>
-            <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]">+</button>
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-10 h-10 rounded-lg bg-[#2a2a3a] text-gray-300 text-xl font-bold active:bg-[#3a3a4a]"
+            >
+              +
+            </button>
           </div>
+        </div>
+
+        {/* 店舗名・カテゴリ */}
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="店舗名（任意）"
+            value={store}
+            onChange={(e) => setStore(e.target.value)}
+            className="flex-1 bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 placeholder-gray-500 rounded-lg px-3 py-3 text-base focus:outline-none focus:border-blue-500"
+          />
+          <input
+            type="text"
+            placeholder="カテゴリ（任意）"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="flex-1 bg-[#2a2a3a] border border-[#3a3a4a] text-gray-100 placeholder-gray-500 rounded-lg px-3 py-3 text-base focus:outline-none focus:border-purple-500"
+          />
         </div>
 
         {/* URL */}
@@ -127,9 +161,15 @@ export default function AddItemForm({ onAdd }: Props) {
             <div className="relative inline-block">
               <img src={previewUrl} alt="プレビュー" className="w-20 h-20 object-cover rounded-lg" />
               <button
-                onClick={() => { setPreviewUrl(null); setImageFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                onClick={() => {
+                  setPreviewUrl(null);
+                  setImageFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
-              >×</button>
+              >
+                ×
+              </button>
             </div>
           ) : (
             <button
