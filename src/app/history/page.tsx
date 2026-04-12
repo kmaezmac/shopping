@@ -40,8 +40,54 @@ export default function HistoryPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<HistorySession[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [adding, setAdding] = useState<string | null>(null); // session id being added
+  const [adding, setAdding] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // selected: Map<sessionId, Set<itemIndex>>
+  const [selected, setSelected] = useState<Map<string, Set<number>>>(new Map());
+
+  const totalSelected = [...selected.values()].reduce((sum, s) => sum + s.size, 0);
+
+  const toggleItem = (sessionId: string, idx: number) => {
+    setSelected((prev) => {
+      const next = new Map(prev);
+      const set = new Set(next.get(sessionId) ?? []);
+      if (set.has(idx)) set.delete(idx);
+      else set.add(idx);
+      if (set.size === 0) next.delete(sessionId);
+      else next.set(sessionId, set);
+      return next;
+    });
+  };
+
+  const getSelectedItems = () => {
+    const items: HistoryItem[] = [];
+    for (const [sessionId, indices] of selected) {
+      const session = sessions.find((s) => s.id === sessionId);
+      if (!session) continue;
+      for (const idx of indices) {
+        if (session.items[idx]) items.push(session.items[idx]);
+      }
+    }
+    return items;
+  };
+
+  const addSelected = async () => {
+    const items = getSelectedItems();
+    if (items.length === 0) return;
+    setAdding("selected");
+    await supabase.from("shopping_items").insert(
+      items.map((item) => ({
+        name: item.name,
+        unit: item.unit,
+        quantity: item.quantity,
+        image_url: item.image_url,
+        store: item.store,
+        category: item.category,
+      }))
+    );
+    setAdding(null);
+    router.push("/");
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -198,36 +244,54 @@ export default function HistoryPage() {
 
                       {/* アイテム一覧 */}
                       <div className="divide-y divide-[#2a2a3a]">
-                        {session.items.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-3 px-4 py-2.5">
-                            {item.image_url && (
-                              <img
-                                src={item.image_url}
-                                alt={item.name}
-                                className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-200 truncate">
-                                {item.name}
-                              </p>
-                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                <span className="text-xs text-gray-600">{item.unit}</span>
-                                {item.store && (
-                                  <span className="text-xs bg-blue-900/30 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded-full">
-                                    {item.store}
-                                  </span>
-                                )}
-                                {item.category && (
-                                  <span className="text-xs text-gray-600">{item.category}</span>
+                        {session.items.map((item, idx) => {
+                          const isSelected = selected.get(session.id)?.has(idx) ?? false;
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => toggleItem(session.id, idx)}
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                                isSelected ? "bg-purple-900/20" : "active:bg-[#2a2a3a]"
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                                  isSelected ? "bg-purple-500 border-purple-500" : "border-[#4a4a5a]"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
                                 )}
                               </div>
+                              {item.image_url && (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-200 truncate">{item.name}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <span className="text-xs text-gray-600">{item.unit}</span>
+                                  {item.store && (
+                                    <span className="text-xs bg-blue-900/30 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded-full">
+                                      {item.store}
+                                    </span>
+                                  )}
+                                  {item.category && (
+                                    <span className="text-xs text-gray-600">{item.category}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="text-sm font-semibold text-gray-500 flex-shrink-0">
+                                ×{item.quantity}
+                              </span>
                             </div>
-                            <span className="text-sm font-semibold text-gray-500 flex-shrink-0">
-                              ×{item.quantity}
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -237,6 +301,21 @@ export default function HistoryPage() {
           </div>
         )}
       </div>
+
+      {/* 選択した単品を追加 */}
+      {totalSelected > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0f0f14] via-[#0f0f14] to-transparent z-40">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={addSelected}
+              disabled={adding === "selected"}
+              className="w-full py-3.5 rounded-xl bg-purple-600 text-white font-bold text-sm active:bg-purple-700 transition-colors shadow-[0_4px_20px_rgba(147,51,234,0.4)] disabled:opacity-50"
+            >
+              {adding === "selected" ? "追加中..." : `選択した${totalSelected}品をリストに追加`}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
