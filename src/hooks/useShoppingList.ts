@@ -2,52 +2,40 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ShoppingItem } from "@/types";
-import { supabase } from "@/lib/supabase";
+
+function rowToItem(row: Record<string, unknown>): ShoppingItem {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    unit: row.unit as string,
+    quantity: row.quantity as number,
+    imageUrl: (row.image_url as string | null) ?? null,
+    url: (row.url as string | null) ?? null,
+    checked: row.checked as boolean,
+    createdAt: new Date(row.created_at as string).getTime(),
+    store: (row.store as string | null) ?? null,
+    category: (row.category as string | null) ?? null,
+    sortOrder: (row.sort_order as number | null) ?? 0,
+  };
+}
 
 export function useShoppingList() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const fetchItems = useCallback(async () => {
-    const { data } = await supabase
-      .from("shopping_items")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    if (data) {
-      setItems(
-        data.map((row) => ({
-          id: row.id,
-          name: row.name,
-          unit: row.unit,
-          quantity: row.quantity,
-          imageUrl: row.image_url,
-          url: row.url ?? null,
-          checked: row.checked,
-          createdAt: new Date(row.created_at).getTime(),
-          store: row.store ?? null,
-          category: row.category ?? null,
-          sortOrder: row.sort_order ?? 0,
-        }))
-      );
+    const res = await fetch("/api/shopping-items");
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setItems(data.map(rowToItem));
     }
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     fetchItems();
-
-    const channel = supabase
-      .channel("shopping_items_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "shopping_items" },
-        () => { fetchItems(); }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(fetchItems, 10000);
+    return () => clearInterval(interval);
   }, [fetchItems]);
 
   const addItem = useCallback(
@@ -56,9 +44,10 @@ export function useShoppingList() {
         .filter((i) => !i.checked)
         .reduce((max, i) => Math.max(max, i.sortOrder), -1);
 
-      const { data } = await supabase
-        .from("shopping_items")
-        .insert({
+      const res = await fetch("/api/shopping-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: item.name,
           unit: item.unit,
           quantity: item.quantity,
@@ -67,27 +56,11 @@ export function useShoppingList() {
           store: item.store,
           category: item.category,
           sort_order: maxOrder + 1,
-        })
-        .select()
-        .single();
-
-      if (data) {
-        setItems((prev) => [
-          ...prev,
-          {
-            id: data.id,
-            name: data.name,
-            unit: data.unit,
-            quantity: data.quantity,
-            imageUrl: data.image_url,
-            url: data.url ?? null,
-            checked: data.checked,
-            createdAt: new Date(data.created_at).getTime(),
-            store: data.store ?? null,
-            category: data.category ?? null,
-            sortOrder: data.sort_order ?? 0,
-          },
-        ]);
+        }),
+      });
+      const data = await res.json();
+      if (Array.isArray(data) && data[0]) {
+        setItems((prev) => [...prev, rowToItem(data[0])]);
       }
     },
     [items]
@@ -95,27 +68,24 @@ export function useShoppingList() {
 
   const removeItem = useCallback(async (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
-    await supabase.from("shopping_items").delete().eq("id", id);
+    await fetch(`/api/shopping-items/${id}`, { method: "DELETE" });
   }, []);
 
-  const toggleCheck = useCallback(async (id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item
-      )
-    );
-    const { data } = await supabase
-      .from("shopping_items")
-      .select("checked")
-      .eq("id", id)
-      .single();
-    if (data) {
-      await supabase
-        .from("shopping_items")
-        .update({ checked: !data.checked })
-        .eq("id", id);
-    }
-  }, []);
+  const toggleCheck = useCallback(
+    async (id: string) => {
+      const current = items.find((i) => i.id === id);
+      if (!current) return;
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item))
+      );
+      await fetch(`/api/shopping-items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checked: !current.checked }),
+      });
+    },
+    [items]
+  );
 
   const updateQuantity = useCallback(
     async (id: string, delta: number) => {
@@ -127,15 +97,15 @@ export function useShoppingList() {
         return;
       }
 
+      const newQty = currentItem.quantity + delta;
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + delta } : item
-        )
+        prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item))
       );
-      await supabase
-        .from("shopping_items")
-        .update({ quantity: currentItem.quantity + delta })
-        .eq("id", id);
+      await fetch(`/api/shopping-items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: newQty }),
+      });
     },
     [items, removeItem]
   );
@@ -143,14 +113,13 @@ export function useShoppingList() {
   const updateName = useCallback(async (id: string, newName: string) => {
     if (!newName.trim()) return;
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, name: newName.trim() } : item
-      )
+      prev.map((item) => (item.id === id ? { ...item, name: newName.trim() } : item))
     );
-    await supabase
-      .from("shopping_items")
-      .update({ name: newName.trim() })
-      .eq("id", id);
+    await fetch(`/api/shopping-items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName.trim() }),
+    });
   }, []);
 
   const updateUnit = useCallback(async (id: string, newUnit: string) => {
@@ -158,20 +127,23 @@ export function useShoppingList() {
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, unit } : item))
     );
-    await supabase.from("shopping_items").update({ unit }).eq("id", id);
+    await fetch(`/api/shopping-items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unit }),
+    });
   }, []);
 
   const updateItemMedia = useCallback(
     async (id: string, imageUrl: string | null, url: string | null) => {
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, imageUrl, url } : item
-        )
+        prev.map((item) => (item.id === id ? { ...item, imageUrl, url } : item))
       );
-      await supabase
-        .from("shopping_items")
-        .update({ image_url: imageUrl, url })
-        .eq("id", id);
+      await fetch(`/api/shopping-items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url: imageUrl, url }),
+      });
     },
     []
   );
@@ -179,14 +151,13 @@ export function useShoppingList() {
   const updateStoreCategory = useCallback(
     async (id: string, store: string | null, category: string | null) => {
       setItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, store, category } : item
-        )
+        prev.map((item) => (item.id === id ? { ...item, store, category } : item))
       );
-      await supabase
-        .from("shopping_items")
-        .update({ store, category })
-        .eq("id", id);
+      await fetch(`/api/shopping-items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store, category }),
+      });
     },
     []
   );
@@ -199,50 +170,39 @@ export function useShoppingList() {
         sortOrder: orderMap.has(item.id) ? orderMap.get(item.id)! : item.sortOrder,
       }))
     );
-    await Promise.all(
-      orderedIds.map((id, idx) =>
-        supabase.from("shopping_items").update({ sort_order: idx }).eq("id", id)
-      )
-    );
+    await fetch("/api/shopping-items/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orders: orderedIds.map((id, idx) => ({ id, sort_order: idx })),
+      }),
+    });
   }, []);
 
   const clearChecked = useCallback(async () => {
     const checkedIds = items.filter((i) => i.checked).map((i) => i.id);
     setItems((prev) => prev.filter((item) => !item.checked));
     if (checkedIds.length > 0) {
-      await supabase.from("shopping_items").delete().in("id", checkedIds);
+      await fetch("/api/shopping-items", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: checkedIds }),
+      });
     }
   }, [items]);
 
-  // 買い物完了: チェック済みのみ履歴保存して削除、未チェックは残す
   const clearAll = useCallback(async () => {
     const checkedItems = items.filter((i) => i.checked);
     if (checkedItems.length === 0) return;
 
-    const { data: history } = await supabase
-      .from("shopping_history")
-      .insert({})
-      .select()
-      .single();
-
-    if (history) {
-      await supabase.from("shopping_history_items").insert(
-        checkedItems.map((item) => ({
-          history_id: history.id,
-          name: item.name,
-          unit: item.unit,
-          quantity: item.quantity,
-          image_url: item.imageUrl,
-          url: item.url,
-          store: item.store,
-          category: item.category,
-        }))
-      );
-    }
-
     const checkedIds = checkedItems.map((i) => i.id);
     setItems((prev) => prev.filter((i) => !i.checked));
-    await supabase.from("shopping_items").delete().in("id", checkedIds);
+
+    await fetch("/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checkedItems, checkedIds }),
+    });
   }, [items]);
 
   return {

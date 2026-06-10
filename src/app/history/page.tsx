@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -75,37 +74,34 @@ export default function HistoryPage() {
     const items = getSelectedItems();
     if (items.length === 0) return;
     setAdding("selected");
-    await supabase.from("shopping_items").insert(
-      items.map((item) => ({
-        name: item.name,
-        unit: item.unit,
-        quantity: item.quantity,
-        image_url: item.image_url,
-        store: item.store,
-        category: item.category,
-      }))
-    );
+    await fetch("/api/shopping-items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        items.map((item) => ({
+          name: item.name,
+          unit: item.unit,
+          quantity: item.quantity,
+          image_url: item.image_url,
+          store: item.store,
+          category: item.category,
+        }))
+      ),
+    });
     setAdding(null);
     router.push("/");
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await supabase
-        .from("shopping_history")
-        .select(
-          "id, completed_at, shopping_history_items(name, unit, quantity, image_url, store, category)"
-        )
-        .order("completed_at", { ascending: false });
-
-      if (data) {
+      const res = await fetch("/api/history");
+      const data = await res.json();
+      if (Array.isArray(data)) {
         setSessions(
-          data.map((h) => ({
+          data.map((h: { id: string; completed_at: string; shopping_history_items: HistoryItem[] }) => ({
             id: h.id,
             completedAt: new Date(h.completed_at).getTime(),
-            items: (
-              h.shopping_history_items as HistoryItem[]
-            ) || [],
+            items: h.shopping_history_items || [],
           }))
         );
       }
@@ -117,42 +113,27 @@ export default function HistoryPage() {
   const restoreSession = async (session: HistorySession) => {
     if (adding) return;
     setAdding(session.id);
-    await supabase.from("shopping_items").insert(
-      session.items.map((item) => ({
-        name: item.name,
-        unit: item.unit,
-        quantity: item.quantity,
-        image_url: item.image_url,
-        store: item.store,
-        category: item.category,
-      }))
-    );
+    await fetch("/api/shopping-items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        session.items.map((item) => ({
+          name: item.name,
+          unit: item.unit,
+          quantity: item.quantity,
+          image_url: item.image_url,
+          store: item.store,
+          category: item.category,
+        }))
+      ),
+    });
     setAdding(null);
     router.push("/");
   };
 
   const deleteSession = async (sessionId: string) => {
     setDeletingId(sessionId);
-
-    const { data: historyItems } = await supabase
-      .from("shopping_history_items")
-      .select("image_url")
-      .eq("history_id", sessionId);
-
-    if (historyItems) {
-      const fileNames = historyItems
-        .map((i) => i.image_url)
-        .filter((url): url is string => url !== null)
-        .map((url) => url.split("/").pop())
-        .filter((f): f is string => Boolean(f));
-      if (fileNames.length > 0) {
-        await supabase.storage.from("shopping-images").remove(fileNames);
-      }
-    }
-
-    await supabase.from("shopping_history_items").delete().eq("history_id", sessionId);
-    await supabase.from("shopping_history").delete().eq("id", sessionId);
-
+    await fetch(`/api/history/${sessionId}`, { method: "DELETE" });
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     setDeletingId(null);
   };

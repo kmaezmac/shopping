@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import { ShoppingItem } from "@/types";
-import { supabase } from "@/lib/supabase";
 
 interface Props {
   onAdd: (item: Omit<ShoppingItem, "id" | "checked" | "createdAt" | "sortOrder">) => void;
@@ -31,14 +30,12 @@ export default function AddItemForm({ onAdd }: Props) {
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
-    const ext = file.name.split(".").pop();
-    const fileName = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("shopping-images")
-      .upload(fileName, file);
-    if (error) return null;
-    const { data } = supabase.storage.from("shopping-images").getPublicUrl(fileName);
-    return data.publicUrl;
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
+    if (!res.ok) return null;
+    const { url } = await res.json();
+    return url ?? null;
   };
 
   const handleSubmit = async () => {

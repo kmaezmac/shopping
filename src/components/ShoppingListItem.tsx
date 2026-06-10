@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { ShoppingItem } from "@/types";
-import { supabase } from "@/lib/supabase";
 
 interface Props {
   item: ShoppingItem;
@@ -74,22 +73,20 @@ export default function ShoppingListItem({
 
     let newImageUrl = item.imageUrl;
     if (editFile) {
-      const ext = editFile.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("shopping-images")
-        .upload(fileName, editFile);
-      if (!error) {
-        const { data } = supabase.storage.from("shopping-images").getPublicUrl(fileName);
-        newImageUrl = data.publicUrl;
+      const formData = new FormData();
+      formData.append("file", editFile);
+      const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
+      if (res.ok) {
+        const { url } = await res.json();
+        newImageUrl = url ?? null;
         if (item.imageUrl) {
           const oldFile = item.imageUrl.split("/").pop();
-          if (oldFile) await supabase.storage.from("shopping-images").remove([oldFile]);
+          if (oldFile) await fetch(`/api/storage/${oldFile}`, { method: "DELETE" });
         }
       }
     } else if (editPreview === null && item.imageUrl) {
       const oldFile = item.imageUrl.split("/").pop();
-      if (oldFile) await supabase.storage.from("shopping-images").remove([oldFile]);
+      if (oldFile) await fetch(`/api/storage/${oldFile}`, { method: "DELETE" });
       newImageUrl = null;
     }
 
