@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { ShoppingItem } from "@/types";
+import { normalizeImageFile } from "@/lib/convert-image";
 
 interface Props {
   onAdd: (item: Omit<ShoppingItem, "id" | "checked" | "createdAt" | "sortOrder">) => void;
@@ -20,13 +21,14 @@ export default function AddItemForm({ onAdd }: Props) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
+    const normalized = await normalizeImageFile(file);
+    setImageFile(normalized);
     const reader = new FileReader();
     reader.onload = () => setPreviewUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(normalized);
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {

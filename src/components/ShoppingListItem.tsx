@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ShoppingItem } from "@/types";
+import { normalizeImageFile } from "@/lib/convert-image";
 
 interface Props {
   item: ShoppingItem;
@@ -51,13 +52,14 @@ export default function ShoppingListItem({
     setIsEditing(true);
   };
 
-  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setEditFile(file);
+    const normalized = await normalizeImageFile(file);
+    setEditFile(normalized);
     const reader = new FileReader();
     reader.onload = () => setEditPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(normalized);
   };
 
   const handleEditSave = async () => {
