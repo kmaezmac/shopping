@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { ShoppingItem } from "@/types";
 import { normalizeImageFile } from "@/lib/convert-image";
+import { uploadImage } from "@/lib/upload-image";
 
 interface Props {
   onAdd: (item: Omit<ShoppingItem, "id" | "checked" | "createdAt" | "sortOrder">) => void;
@@ -31,14 +32,6 @@ export default function AddItemForm({ onAdd }: Props) {
     reader.readAsDataURL(normalized);
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
-    if (!res.ok) return null;
-    const { url } = await res.json();
-    return url ?? null;
-  };
 
   const handleSubmit = async () => {
     if (!name.trim()) return;

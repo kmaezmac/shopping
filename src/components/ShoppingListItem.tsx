@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { ShoppingItem } from "@/types";
 import { normalizeImageFile } from "@/lib/convert-image";
+import { uploadImage } from "@/lib/upload-image";
 
 interface Props {
   item: ShoppingItem;
@@ -75,12 +76,9 @@ export default function ShoppingListItem({
 
     let newImageUrl = item.imageUrl;
     if (editFile) {
-      const formData = new FormData();
-      formData.append("file", editFile);
-      const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
-      if (res.ok) {
-        const { url } = await res.json();
-        newImageUrl = url ?? null;
+      const url = await uploadImage(editFile);
+      if (url) {
+        newImageUrl = url;
         if (item.imageUrl) {
           const oldFile = item.imageUrl.split("/").pop();
           if (oldFile) await fetch(`/api/storage/${oldFile}`, { method: "DELETE" });
